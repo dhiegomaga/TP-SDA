@@ -51,17 +51,17 @@ IOPCItemMgt* pIOPCItemMgt = NULL; //pointer to IOPCItemMgt interface
 OPCHANDLE hServerGroup; // server handle to the group
 
 // Write items (Posicao)
-Opc_item vel_trans = {NULL, L"Bucket Brigade.Real4", REAL4 };
-Opc_item coord_x = { NULL, L"Bucket Brigade.UInt1", UINT1 };
-Opc_item coord_y = { NULL, L"Bucket Brigade.UInt2", UINT2 };
-Opc_item coord_z = { NULL, L"Bucket Brigade.UInt4", UINT4 };
-Opc_item taxa_rec = { NULL, L"Bucket Brigade.Real8", REAL8 };
+Opc_item vel_trans = {NULL, L"Bucket Brigade.Real4", REAL4,1 };
+Opc_item coord_x = { NULL, L"Bucket Brigade.UInt1", UINT1,2 };
+Opc_item coord_y = { NULL, L"Bucket Brigade.UInt2", UINT2,3 };
+Opc_item coord_z = { NULL, L"Bucket Brigade.UInt4", UINT4,4 };
+Opc_item taxa_rec = { NULL, L"Bucket Brigade.Real8", REAL8,5 };
 
 // Read items (Status)
-Opc_item taxa_rec_real = { NULL, L"Random.UInt1", UINT1 };
-Opc_item potencia = { NULL, L"Random.Real4", REAL4 };
-Opc_item temp_transl = { NULL, L"Saw-Toothed Waves.Real4", REAL4 };
-Opc_item temp_roda = { NULL, L"Square Waves.Real4", REAL4 };
+Opc_item taxa_rec_real = { NULL, L"Random.UInt1", UINT1,6 };
+Opc_item potencia = { NULL, L"Random.Real4", REAL4,7 };
+Opc_item temp_transl = { NULL, L"Saw-Toothed Waves.Real4", REAL4,8 };
+Opc_item temp_roda = { NULL, L"Square Waves.Real4", REAL4,9 };
 
 // State variables
 unsigned int msg_seq = 1;
@@ -78,7 +78,6 @@ int main(void)
 	char buf[100];
 	unsigned int loop_web_time = 2000;
 	unsigned int loop_opc_time = 1000;
-	unsigned int loop_opc_read__time = 5000;
 	executing = true;
 
 	// ---------- RECONNECT EVENT -----------
@@ -123,37 +122,6 @@ int main(void)
         return 1;
     }
 
-    // Attempt to connect to an address until one succeeds
-
-	/*
-    for(ptr=result; ptr != NULL ;ptr=ptr->ai_next) {
-
-        // Create a SOCKET for connecting to server
-        ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, 
-            ptr->ai_protocol);
-        if (ConnectSocket == INVALID_SOCKET) {
-            printf("socket failed with error: %ld\n", WSAGetLastError());
-            WSACleanup();
-            return 1;
-        }
-
-        // Connect to server.
-        iResult = connect( ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
-        if (iResult == SOCKET_ERROR) {
-            closesocket(ConnectSocket);
-            ConnectSocket = INVALID_SOCKET;
-            continue;
-        }
-        break;
-    }
-
-    if (ConnectSocket == INVALID_SOCKET) {
-        printf("Unable to connect to server!\n");
-        WSACleanup();
-        return 1;
-    }
-	*/
-
 	// Connection to be estabilished
 	connected = false;
 
@@ -169,18 +137,17 @@ int main(void)
 	// Add the OPC item. First we have to convert from wchar_t* to char*
 	// in order to print the item name in the console.
 
-	AddTheItem(pIOPCItemMgt, vel_trans.item_handle , vel_trans.item_id , vel_trans.type );
-	AddTheItem(pIOPCItemMgt, coord_x.item_handle , coord_x.item_id , coord_x.type );
-	AddTheItem(pIOPCItemMgt, coord_y.item_handle , coord_y.item_id , coord_y.type );
-	AddTheItem(pIOPCItemMgt, coord_z.item_handle , coord_z.item_id , coord_z.type );
-	AddTheItem(pIOPCItemMgt, taxa_rec.item_handle , taxa_rec.item_id , taxa_rec.type );
-
+	AddTheItem(pIOPCItemMgt, vel_trans.item_handle , vel_trans.item_id , vel_trans.type, vel_trans.id );
+	AddTheItem(pIOPCItemMgt, coord_x.item_handle , coord_x.item_id , coord_x.type, coord_x.id );
+	AddTheItem(pIOPCItemMgt, coord_y.item_handle , coord_y.item_id , coord_y.type, coord_y.id );
+	AddTheItem(pIOPCItemMgt, coord_z.item_handle , coord_z.item_id , coord_z.type, coord_z.id );
+	AddTheItem(pIOPCItemMgt, taxa_rec.item_handle , taxa_rec.item_id , taxa_rec.type, taxa_rec.id );
 
 	// Status items
-	AddTheItem(pIOPCItemMgt, taxa_rec_real.item_handle, taxa_rec_real.item_id, taxa_rec_real.type);
-	AddTheItem(pIOPCItemMgt, potencia.item_handle, potencia.item_id, potencia.type);
-	AddTheItem(pIOPCItemMgt, temp_transl.item_handle, temp_transl.item_id, temp_transl.type);
-	AddTheItem(pIOPCItemMgt, temp_roda.item_handle, temp_roda.item_id, temp_roda.type);
+	AddTheItem(pIOPCItemMgt, taxa_rec_real.item_handle, taxa_rec_real.item_id, taxa_rec_real.type, taxa_rec_real.id);
+	AddTheItem(pIOPCItemMgt, potencia.item_handle, potencia.item_id, potencia.type, potencia.id);
+	AddTheItem(pIOPCItemMgt, temp_transl.item_handle, temp_transl.item_id, temp_transl.type, temp_transl.id);
+	AddTheItem(pIOPCItemMgt, temp_roda.item_handle, temp_roda.item_id, temp_roda.type, temp_roda.id);
 
 	VARIANT varValue; //to store the read value
 	VariantInit(&varValue);
@@ -194,8 +161,29 @@ int main(void)
 
 	// Initialize opc client thread
 	std::thread t3(opcclient_loop, loop_opc_time);
-	std::thread t4(opcread_loop, loop_opc_read__time);
 
+
+	//std::thread t4(opcread_loop, loop_opc_read__time);
+	
+	// Establish a callback asynchronous read by means of the IOPCDataCallback
+	// (OPC DA 2.0) method. We first instantiate a new SOCDataCallback object and
+	// adjusts its reference count, and then call a wrapper function to
+	// setup the callback.
+	IConnectionPoint* pIConnectionPoint = NULL; //pointer to IConnectionPoint Interface
+	DWORD dwCookie = 0;
+	SOCDataCallback* pSOCDataCallback = new SOCDataCallback(
+		&taxa_rec_real, 
+		&potencia, 
+		&temp_transl, 
+		&temp_roda, 
+		&status,
+		&opc_mutex);
+	pSOCDataCallback->AddRef();
+	SetDataCallback(pIOPCItemMgt, pSOCDataCallback, pIConnectionPoint, &dwCookie);
+
+	// Change the group to the ACTIVE state so that we can receive the
+	// server's callback notification
+    SetGroupActive(pIOPCItemMgt); 
 
 	printf("Press Q+ENTER to terminate ... \n");
 	while(true){
@@ -247,6 +235,12 @@ int main(void)
 					// Update posicao
 					string data(recvbuf);
 					std::vector<string> fields = split(data, '$');
+
+					// Test if message has 7 fields
+					if(fields.size() != 7){
+						printf("MENSAGEM DO SERVIDOR NAO ESTA NO FORMATO ESPERADO.\n\n");
+					}
+
 					posicao.vel_transl = std::stod(fields.at(2));
 					posicao.coord_x = std::stoi(fields.at(3));
 					posicao.coord_y = std::stoi(fields.at(4));
@@ -285,118 +279,11 @@ int main(void)
 
 		if((char)c=='q') break;
 	}
-
-	DWORD ticks1, ticks2;
-	int bRet;
-	MSG msg;
-
-	/*
-	// Establish a callback ASYNCHRONOUS READ 
-	//by means of the old IAdviseSink()
-	// (OPC DA 1.0) method. We first instantiate a new SOCAdviseSink object and
-	// adjusts its reference count, and then call a wrapper function to
-	// setup the callback.
-	IDataObject* pIDataObject = NULL; //pointer to IDataObject interface
-	DWORD tkAsyncConnection = 0;
-	SOCAdviseSink* pSOCAdviseSink = new SOCAdviseSink ();
-	pSOCAdviseSink->AddRef();
-    printf("Setting up the IAdviseSink callback connection...\n");
-    SetAdviseSink(pIOPCItemMgt, pSOCAdviseSink, pIDataObject, &tkAsyncConnection);
-
-	// Change the group to the ACTIVE state so that we can receive the
-	// server�s callback notification
-	printf("Changing the group state to ACTIVE...\n");
-    SetGroupActive(pIOPCItemMgt); 
-
-	// Enters a message pump in order to process the server�s callback
-	// notifications. This is needed because the CoInitialize() function
-	// forces the COM threading model to STA (Single Threaded Apartment),
-	// in which, according to the MSDN, "all method calls to a COM object
-	// (...) are synchronized with the windows message queue for the
-	// single-threaded apartment's thread." So, even being a console
-	// application, the OPC client must process messages (which in this case
-	// are only useless WM_USER [0x0400] messages) in order to process
-	// incoming callbacks from a OPC server.
-	//
-	// A better alternative could be to use the CoInitializeEx() function,
-	// which allows one to  specifiy the desired COM threading model;
-	// in particular, calling
-	//        CoInitializeEx(NULL, COINIT_MULTITHREADED)
-	// sets the model to MTA (MultiThreaded Apartments) in which a message
-	// loop is __not required__ since objects in this model are able to
-	// receive method calls from other threads at any time. However, in the
-	// MTA model the user is required to handle any aspects regarding
-	// concurrency, since asynchronous, multiple calls to the object methods
-	// can occur.
-	//
 	
-	
-	ticks1 = GetTickCount();
-	printf("Waiting for IAdviseSink callback notifications during 10 seconds...\n");
-	do {
-		bRet = GetMessage( &msg, NULL, 0, 0 );
-		if (!bRet){
-			printf ("Failed to get windows message! Error code = %d\n", GetLastError());
-			exit(0);
-		}
-		TranslateMessage(&msg); // This call is not really needed ...
-		DispatchMessage(&msg);  // ... but this one is!
-        ticks2 = GetTickCount();
-	}
-	while ((ticks2 - ticks1) < 10000);
 
 	// Cancel the callback and release its reference
-	printf("Cancelling the IAdviseSink callback...\n");
-    CancelAdviseSink(pIDataObject, tkAsyncConnection);
-	pSOCAdviseSink->Release();
-    
-	*/
-
-	// Establish a callback asynchronous read by means of the IOPCDataCallback
-	// (OPC DA 2.0) method. We first instantiate a new SOCDataCallback object and
-	// adjusts its reference count, and then call a wrapper function to
-	// setup the callback.
-
-	/* asynchronous: does work
-	IConnectionPoint* pIConnectionPoint = NULL; //pointer to IConnectionPoint Interface
-	DWORD dwCookie = 0;
-	SOCDataCallback* pSOCDataCallback = new SOCDataCallback(
-		&taxa_rec_real, 
-		&status);
-	pSOCDataCallback->AddRef();
-
-	printf("Setting up the IConnectionPoint callback connection...\n");
-	SetDataCallback(pIOPCItemMgt, pSOCDataCallback, pIConnectionPoint, &dwCookie);
-
-	// Change the group to the ACTIVE state so that we can receive the
-	// server�s callback notification
-	printf("Changing the group state to ACTIVE...\n");
-    SetGroupActive(pIOPCItemMgt); 
-
-	*/
-
-	// Enter again a message pump in order to process the server�s callback
-	// notifications, for the same reason explained before.
-	
-	/*
-	ticks1 = GetTickCount();
-	printf("Waiting for IOPCDataCallback notifications during 10 seconds...\n");
-	do {
-		// Read Key
-		// Solicit position of bucket
-        ticks2 = GetTickCount();
-		
-	}
-	while ((ticks2 - ticks1) < 10000);
-	*/
-
-	// Cancel the callback and release its reference
-    
-	/* asynchronous: doesnt work
 	CancelDataCallback(pIConnectionPoint, dwCookie);
 	pSOCDataCallback->Release();
-	*/
-	//pIConnectionPoint->Release();
 	
 	// Stop threads
 	executing = false;
@@ -408,7 +295,8 @@ int main(void)
 	t1.join();
 	t2.join();
 	t3.join();
-	t4.join();
+
+	//t4.join();
 
 	// Close event
 	CloseHandle(connectionLostEvent);
@@ -536,7 +424,7 @@ void AddTheGroup(IOPCServer* pIOPCServer, IOPCItemMgt* &pIOPCItemMgt,
 // is pointed by pIOPCItemMgt pointer. Return a server opc handle
 // to the item.
  
-void AddTheItem(IOPCItemMgt* pIOPCItemMgt, OPCHANDLE& hServerItem, wchar_t* ITEM_ID, int VT)
+void AddTheItem(IOPCItemMgt* pIOPCItemMgt, OPCHANDLE& hServerItem, wchar_t* ITEM_ID, int VT, int identifier)
 {
 	HRESULT hr;
 
@@ -546,7 +434,7 @@ void AddTheItem(IOPCItemMgt* pIOPCItemMgt, OPCHANDLE& hServerItem, wchar_t* ITEM
 	/*szAccessPath*/ L"",
 	/*szItemID*/ ITEM_ID,
 	/*bActive*/ TRUE,
-	/*hClient*/ 1,
+	/*hClient*/ identifier,
 	/*dwBlobSize*/ 0,
 	/*pBlob*/ NULL,
 	/*vtRequestedDataType*/ VT,
@@ -691,6 +579,7 @@ void webclient_loop(unsigned int loop_delay) {
 			send_msg+= "$";
 			send_msg+= get_float_str(status.temp_roda);
 
+
 			iResult = send( ConnectSocket, send_msg.c_str(), (int) send_msg.size() , 0 );
 			printf("SENT: %s\n", send_msg.c_str());
 			if (iResult == SOCKET_ERROR) {
@@ -705,6 +594,8 @@ void webclient_loop(unsigned int loop_delay) {
 			iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
 			if ( iResult > 0 )
 			{
+				if(iResult>= recvbuflen)iResult-=1; // Prevent possible invalid memory access
+				recvbuf[iResult]=0;
 				printf("RECV: %s\n", recvbuf);
 				if(++msg_seq >= 1000000) msg_seq = 1;
 			}
@@ -855,10 +746,12 @@ void reconnect_server_thread(struct addrinfo *result){
 				// Send request
 				iResult = send( ConnectSocket, send_msg.c_str(), (int) send_msg.size() , 0 );
 				printf("SENT: %s\n", send_msg.c_str());
+
 				// Receive data
+				iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
 				if ( iResult > 0 )
 				{
-					printf("RECV: %s\n", recvbuf);
+					printf("RECV: %s\n\n", recvbuf);
 					msg_seq += 1;
 
 					// Send ACK if data was received
@@ -869,6 +762,7 @@ void reconnect_server_thread(struct addrinfo *result){
 					// Connection restored
 					printf("Conexao estabelecida. \n\n");
 					connected = true;
+
 					break; // Break connection loop
 				}
 
@@ -941,7 +835,7 @@ std::string get_int_str(int val){
 std::string get_float_str(float val){
 	std::stringstream ss;
 	if(val>9999.0) val = 9999.0;
-	if(val<0) val = 0.0;
+	if(val<0.0) val = 0.0;
 	ss << std::setw(6) << std::setfill('0') <<  std::fixed << std::setprecision(1) << val;
 	std::string s = ss.str();
 	return s;

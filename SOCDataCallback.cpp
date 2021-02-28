@@ -16,18 +16,24 @@ extern UINT OPC_DATA_TIME;
 //	Constructor.  Reference count is initialized to zero.
 SOCDataCallback::SOCDataCallback (
 	Opc_item* taxa_rec_real,
-	Status_rec* status
-)
-	{
-		m_cnRef = 0;
-		this->taxa_rec_real = taxa_rec_real;
-		this->status = status; 
-	}
+	Opc_item* potencia,
+	Opc_item* temp_transl,
+	Opc_item* temp_roda,
+	Status_rec* status,
+	std::mutex * opc_mutex
+) {
+	m_cnRef = 0;
+	this->taxa_rec_real = taxa_rec_real;
+	this->potencia = potencia;
+	this->temp_transl = temp_transl;
+	this->temp_roda = temp_roda;
+	this->status = status; 
+	this->opc_mutex = opc_mutex;
+}
 
 //	Destructor
-SOCDataCallback::~SOCDataCallback ()
-	{
-	}
+SOCDataCallback::~SOCDataCallback (){
+}
 
 // IUnknown methods
 HRESULT STDMETHODCALLTYPE SOCDataCallback::QueryInterface (REFIID riid, LPVOID *ppv)
@@ -128,41 +134,30 @@ HRESULT STDMETHODCALLTYPE SOCDataCallback::OnDataChange(
 	int a=0;
 	
 	// Loop over items:
-	for (DWORD i = 0; i < dwCount; i++)
+	//if(opc_mutex->try_lock())
+	if(true)
 	{
-
-		// Check which item handler the data corresponds to
-		if( phClientItems[i] == this->taxa_rec_real->item_handle )
+		for (DWORD i = 0; i < dwCount; i++)
 		{
-			printf("item is TAXA");
+			// Check which item handler the data corresponds to
+			if( phClientItems[i] == this->taxa_rec_real->id )
+			{
+				this->status->taxa_rec_real = pvValues[i].uintVal;
+			}
+			else if( phClientItems[i] == this->potencia->id )
+			{
+				this->status->potencia = pvValues[i].fltVal;
+			}
+			else if( phClientItems[i] == this->temp_transl->id )
+			{
+				this->status->temp_transl = pvValues[i].fltVal;
+			}
+			else if( phClientItems[i] == this->temp_roda->id )
+			{
+				this->status->temp_roda = pvValues[i].fltVal;
+			}
 		}
-		printf("--------------\nItem INDEX: %d\n", i);
-
-		// Print the item value, quality and time stamp. In this example, only
-		// a few OPC data types are supported.
-		status = VarToStr(pvValues[i], buffer);
-		if (status){
-			printf("Data callback: Value = %s", buffer);
-			quality = pwQualities [i] & OPC_QUALITY_MASK;
-			if (quality == OPC_QUALITY_GOOD)
-				printf(" Quality: good");
-			else
-			    printf(" Quality: not good");
-			// Code below extracted from the Microsoft KB:
-			//     http://support.microsoft.com/kb/188768
-			// Note that in order for it to work, the Visual Studio C++ must
-			// be configured so that the "character set" property is "not set"
-			// (Project->Project Properties->Configuration Properties->General).
-			// Otherwise, if defined e.g. as "use Unicode" (as it seems to be
-			// the default when a new project is created), there will be
-			// compilation errors.
-			FileTimeToLocalFileTime(&pftTimeStamps [i],&lft);
-			FileTimeToSystemTime(&lft, &st);
-			GetDateFormat(LOCALE_SYSTEM_DEFAULT, DATE_SHORTDATE, &st, NULL, szLocalDate, 255);
-			GetTimeFormat(LOCALE_SYSTEM_DEFAULT, 0, &st, NULL, szLocalTime, 255);
-			printf(" Time: %s %s\n", szLocalDate, szLocalTime);
-		}
-		else printf ("IOPCDataCallback: Unsupported item type\n");
+		//opc_mutex->unlock();
 	}
 
 	// Return "success" code.  Note this does not mean that there were no 

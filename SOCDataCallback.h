@@ -13,6 +13,8 @@
 #ifndef _SOCDATACALLBACK_H
 #define _SOCDATACALLBACK_H
 
+#include <mutex>
+
 struct Posicao { 
 	float vel_transl; 
 	unsigned int coord_x;
@@ -34,15 +36,20 @@ struct Opc_item {
 	OPCHANDLE item_handle;
 	wchar_t *item_id;
 	int type;
+	int id;
 };
 
 // **************************************************************************
 class SOCDataCallback : public IOPCDataCallback
 	{
 	public:
-		SOCDataCallback (
-			Opc_item*,
-			Status_rec*
+		SOCDataCallback::SOCDataCallback (
+			Opc_item* taxa_rec_real,
+			Opc_item* potencia,
+			Opc_item* temp_transl,
+			Opc_item* temp_roda,
+			Status_rec* status,
+			std::mutex * opc_mutex
 		);
 		~SOCDataCallback ();
 
@@ -91,7 +98,11 @@ class SOCDataCallback : public IOPCDataCallback
 	private:
 		DWORD m_cnRef;
 		Opc_item * taxa_rec_real;
+		Opc_item* potencia;
+		Opc_item* temp_transl;
+		Opc_item* temp_roda;
 		Status_rec * status;
+		std::mutex * opc_mutex;
 	};
 
 
