@@ -134,8 +134,7 @@ HRESULT STDMETHODCALLTYPE SOCDataCallback::OnDataChange(
 	int a=0;
 	
 	// Loop over items:
-	//if(opc_mutex->try_lock())
-	if(true)
+	if(opc_mutex->try_lock())
 	{
 		for (DWORD i = 0; i < dwCount; i++)
 		{
@@ -157,7 +156,7 @@ HRESULT STDMETHODCALLTYPE SOCDataCallback::OnDataChange(
 				this->status->temp_roda = pvValues[i].fltVal;
 			}
 		}
-		//opc_mutex->unlock();
+		opc_mutex->unlock();
 	}
 
 	// Return "success" code.  Note this does not mean that there were no 
