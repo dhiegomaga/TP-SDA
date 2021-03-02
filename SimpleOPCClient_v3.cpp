@@ -641,7 +641,7 @@ void opcclient_loop(unsigned int loop_delay) {
 			unsigned int cx = posicao.coord_x;
 			if (cx > 255) cx = 255;
 			varValue.uintVal = cx;
-			varValue.uiVal = (unsigned short) posicao.coord_x;
+			varValue.uiVal = cx;
 			WriteItem(pIOPCItemMgt, coord_x.item_handle, &varValue);
 
 			varValue.vt = coord_y.type;
